@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f2347" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="社保计算器" />
+  <meta name="description" content="输入薪资，自动计算公司总成本与个人社保公积金明细" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/五险一金计算器-icon.png" />
+  <title>五险一金成本计算器</title>
+  <style>
+    :root {
+      --bg-page:       #eef2f8;
+      --bg-card:       #ffffff;
+      --blue-50:       #e8effe;
+      --blue-100:      #c5d8fb;
+      --blue-500:      #1d4ed8;
+      --blue-600:      #1e3fa8;
+      --blue-700:      #1a3480;
+      --blue-800:      #0f2347;
+      --red-500:       #dc2626;
+      --red-600:       #b91c1c;
+      --green-500:     #059669;
+      --green-600:     #047857;
+      --purple-500:    #7c3aed;
+      --text-primary:  #1a202c;
+      --text-secondary: #4a5568;
+      --text-muted:    #8896a8;
+      --border:        #d0d9ee;
+      --shadow:        0 2px 16px rgba(29,78,216,0.10);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      background-color: var(--bg-page);
+      background-image:
+        radial-gradient(ellipse at 20% 0%, rgba(29,78,216,0.07) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 100%, rgba(220,38,38,0.05) 0%, transparent 55%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px 70px;
+      color: var(--text-primary);
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--blue-900);
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h1 .icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(15,35,71,0.25);
+      flex-shrink: 0;
+    }
+    h1 .icon img {
+      width: 44px; height: 44px;
+      object-fit: cover;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 32px;
+      width: 100%;
+      max-width: 640px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+
+    .tab-group {
+      display: flex;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid var(--blue-100);
+      margin-bottom: 26px;
+    }
+    .tab-group button {
+      flex: 1;
+      padding: 11px 0;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-secondary);
+      transition: all 0.22s;
+      font-family: inherit;
+    }
+    .tab-group button.active {
+      background: linear-gradient(135deg, var(--blue-500), var(--blue-700));
+      color: #fff;
+    }
+    .tab-group button:not(:last-child) { border-right: 1px solid var(--blue-100); }
+    .tab-group button:not(.active):hover { background: var(--blue-50); }
+
+    .panel { display: none; }
+    .panel.show { display: block; }
+
+    .salary-block {
+      background: var(--bg-page);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--blue-700);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-title::before {
+      content: '';
+      display: inline-block;
+      width: 3px; height: 12px;
+      background: var(--blue-500);
+      border-radius: 2px;
+    }
+    .section-title.red::before { background: var(--red-500); }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .input-row:last-child { margin-bottom: 0; }
+    .input-row label {
+      width: 120px;
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+      line-height: 1.5;
+    }
+    .input-row label small {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .input-row input[type="number"] {
+      flex: 1;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 15px;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+    }
+    .input-row input[type="number"]:focus {
+      border-color: var(--blue-500);
+      box-shadow: 0 0 0 3px rgba(29,78,216,0.12);
+    }
+    .input-row input::placeholder { color: #aab4c4; }
+    .unit { font-size: 12px; color: var(--text-muted); white-space: nowrap; min-width: 34px; text-align: right; }
+    .tip { font-size: 12px; color: var(--text-muted); margin-top: 6px; min-height: 16px; }
+
+    /* 档位选择 */
+    .tier-block {
+      border-top: 1px dashed var(--border);
+      padding-top: 22px;
+      margin-bottom: 16px;
+    }
+    .tier-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .tier-col {
+      background: var(--bg-page);
+      border-radius: 12px;
+      padding: 16px 18px;
+      border: 1.5px solid transparent;
+    }
+    .tier-col.ss { border-color: rgba(220,38,38,0.2); }
+    .tier-col.hf { border-color: rgba(29,78,216,0.2); }
+
+    .tier-col-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tier-col-title.ss { color: var(--red-600); }
+    .tier-col-title.hf { color: var(--blue-600); }
+    .tier-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      color: #fff;
+    }
+    .tier-tag.ss { background: var(--red-500); }
+    .tier-tag.hf { background: var(--blue-500); }
+
+    .tier-auto-badge {
+      display: inline-block;
+      background: var(--blue-50);
+      color: var(--blue-600);
+      border: 1px solid var(--blue-100);
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      cursor: default;
+    }
+    .tier-auto-badge.manual {
+      background: #fff3e0;
+      color: #e65100;
+      border-color: #ffcc80;
+    }
+    .tier-auto-badge.custom {
+      background: #ffebee;
+      color: #b71c1c;
+      border-color: #ef9a9a;
+    }
+
+    .tier-select {
+      width: 100%;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 13.5px;
+      color: var(--text-primary);
+      outline: none;
+      cursor: pointer;
+      font-family: inherit;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238896a8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+      transition: border-color 0.2s;
+    }
+    .tier-select.ss:focus { border-color: var(--red-500); box-shadow: 0 0 0 3px rgba(220,38,38,0.10); }
+    .tier-select.hf:focus { border-color: var(--blue-500); box-shadow: 0 0 0 3px rgba(29,78,216,0.10); }
+
+    .tier-custom-box {
+      display: none;
+      background: rgba(29,78,216,0.03);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 8px;
+      border: 1px dashed var(--blue-100);
+    }
+    .tier-custom-box.show { display: block; }
+    .tier-custom-box .ci-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .tier-custom-box .ci-row:last-child { margin-bottom: 0; }
+    .tier-custom-box .ci-row label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      width: 56px;
+      flex-shrink: 0;
+    }
+    .tier-custom-box .ci-row input {
+      flex: 1;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 13px;
+      color: var(--text-primary);
+      outline: none;
+      font-family: inherit;
+    }
+    .tier-custom-box .ci-row input:focus { border-color: var(--blue-500); }
+
+    .tier-switch-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      text-align: center;
+    }
+    .tier-switch-hint button {
+      background: none;
+      border: none;
+      color: var(--blue-500);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      text-decoration: underline;
+      font-family: inherit;
+      padding: 0;
+    }
+    .tier-switch-hint button:hover { color: var(--blue-700); }
+
+    /* 奖金区 */
+    .bonus-block {
+      border-top: 1px dashed var(--border);
+      padding-top: 16px;
+      margin-top: 0;
+    }
+    .bonus-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .bonus-input-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .bonus-input-wrap label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .bonus-input-wrap input {
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 14px;
+      color: var(--text-primary);
+      outline: none;
+      font-family: inherit;
+    }
+    .bonus-input-wrap input:focus { border-color: var(--blue-500); box-shadow: 0 0 0 3px rgba(29,78,216,0.10); }
+
+    /* 小计预览 */
+    .bd-preview {
+      background: var(--blue-50);
+      border: 1px solid var(--blue-100);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: none;
+      line-height: 1.9;
+    }
+    .bd-preview.show { display: block; }
+    .bd-preview b { color: var(--blue-700); }
+    .bd-preview .bd-total { color: var(--red-600); font-weight: 800; font-size: 14px; }
+
+    /* 计算按钮 */
+    .calc-btn {
+      width: 100%;
+      max-width: 640px;
+      padding: 15px;
+      border-radius: 14px;
+      border: none;
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--red-500) 0%, var(--red-600) 100%);
+      cursor: pointer;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 18px rgba(220,38,38,0.28);
+      transition: transform 0.15s, box-shadow 0.15s;
+      margin-bottom: 20px;
+      font-family: inherit;
+    }
+    .calc-btn:hover { transform: translateY(-2px); box-shadow: 0 7px 26px rgba(220,38,38,0.36); }
+    .calc-btn:active { transform: translateY(0); }
+
+    /* 结果 */
+    .result-card { display: none; }
+    .result-card.show { display: block; animation: fadeInUp 0.35s ease; }
+
+    .result-card h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--blue-800);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .result-card h2::before {
+      content: '';
+      display: inline-block;
+      width: 4px; height: 18px;
+      background: var(--red-500);
+      border-radius: 3px;
+    }
+
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+    .badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; }
+    .badge-tier { background: linear-gradient(135deg, var(--red-500), var(--red-600)); color: #fff; }
+    .badge-mode { background: var(--blue-50); color: var(--blue-600); border: 1px solid var(--blue-100); }
+    .badge-override { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; display: none; }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .result-item {
+      background: var(--bg-page);
+      border-radius: 12px;
+      padding: 16px 18px;
+      border-left: 4px solid transparent;
+    }
+    .result-item .item-label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
+    .result-item .item-value { font-size: 22px; font-weight: 800; }
+    .result-item .item-value span { font-size: 12px; font-weight: 500; color: var(--text-muted); }
+    .ri-comp  { border-left-color: var(--red-500); }
+    .ri-comp  .item-value { color: var(--red-600); }
+    .ri-pers  { border-left-color: var(--blue-500); }
+    .ri-pers  .item-value { color: var(--blue-600); }
+    .ri-total { border-left-color: #f59e0b; }
+    .ri-total .item-value { color: #d97706; }
+    .annual-total-num { font-size: 24px; font-weight: 900; }
+    .annual-formula {
+      font-size: 12px;
+      color: #888;
+      margin-top: 4px;
+      font-weight: 400;
+      letter-spacing: .3px;
+    }
+    .ri-home  { border-left-color: var(--green-500); }
+    .ri-home  .item-value { color: var(--green-600); }
+    .ri-bonus { border-left-color: var(--purple-500); }
+    .ri-bonus .item-value { color: var(--purple-500); }
+    #res-bonus-item { grid-column: span 2; display: none; }
+
+    .salary-breakdown {
+      background: var(--blue-50);
+      border: 1px solid var(--blue-100);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      font-size: 13px;
+    }
+    .salary-breakdown .sb-title { color: var(--blue-700); font-size: 12px; font-weight: 700; margin-bottom: 10px; }
+    .sb-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(29,78,216,0.07); }
+    .sb-row:last-child { border-bottom: none; }
+    .sb-row .sb-label { color: var(--text-secondary); }
+    .sb-row .sb-val   { color: var(--text-primary); font-weight: 700; }
+    .sb-row.sb-total { margin-top: 6px; padding-top: 10px; border-top: 2px solid var(--blue-100); }
+    .sb-row.sb-total .sb-label { color: var(--blue-700); font-weight: 700; font-size: 14px; }
+    .sb-row.sb-total .sb-val   { color: var(--red-600); font-size: 16px; font-weight: 800; }
+
+    .divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+
+    .detail-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .detail-table th {
+      color: var(--text-muted); font-weight: 600; text-align: left;
+      padding: 7px 10px; border-bottom: 2px solid var(--border);
+      font-size: 12px; background: var(--bg-page);
+    }
+    .detail-table td { padding: 9px 10px; color: var(--text-secondary); border-bottom: 1px solid #eef2f8; }
+    .detail-table tr:last-child td { border-bottom: none; }
+    .detail-table tr:hover td { background: var(--blue-50); }
+    .td-red  { color: var(--red-600) !important; font-weight: 700; }
+    .td-blue { color: var(--blue-600) !important; font-weight: 700; }
+    .td-sum  { font-weight: 800; font-size: 14px; }
+    .highlight-row td { background: var(--blue-50) !important; }
+
+    .note { font-size: 12px; color: var(--text-muted); line-height: 2; background: var(--bg-page); border-radius: 8px; padding: 12px 14px; }
+    .note b { color: var(--blue-600); }
+
+    .ref-section { width: 100%; max-width: 800px; margin-top: 24px; }
+    .ref-section h3 { color: var(--blue-800); font-size: 15px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .ref-section h3::before { content: ''; display: inline-block; width: 4px; height: 16px; background: var(--red-500); border-radius: 3px; }
+    .ref-table-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+    .ref-table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 700px; background: #fff; }
+    .ref-table thead tr { background: var(--blue-800); }
+    .ref-table th { padding: 11px 10px; color: #fff; font-weight: 700; text-align: center; border: none; font-size: 12px; }
+    .ref-table td { padding: 10px; text-align: center; border: none; border-bottom: 1px solid #eef2f8; color: var(--text-secondary); }
+    .ref-table tbody tr:hover td { background: var(--blue-50); }
+    .ref-table .active-row td { background: rgba(220,38,38,0.07) !important; font-weight: 700; }
+    .ref-table .red-text { color: var(--red-600); font-weight: 700; }
+    .ref-table .bold     { font-weight: 800; }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<h1><span class="icon"><img src="/五险一金计算器-icon.png" alt="logo"></span>五险一金成本计算器</h1>
+<p class="subtitle">支持年薪 · 月薪 · 分解输入，五险与公积金档位可独立选择</p>
+
+<!-- ========== 输入卡片 ========== -->
+<div class="card">
+
+  <div class="tab-group">
+    <button id="tab-annual"    class="active" onclick="switchTab('annual')">年薪</button>
+    <button id="tab-monthly"                   onclick="switchTab('monthly')">月薪</button>
+    <button id="tab-breakdown"                 onclick="switchTab('breakdown')">分解输入</button>
+  </div>
+
+  <!-- ==================== 年薪面板 ==================== -->
+  <div id="panel-annual" class="panel show">
+
+    <div class="salary-block">
+      <div class="section-title">薪酬信息</div>
+      <div class="input-row">
+        <label>税前年薪<small>（固定薪资部分）</small></label>
+        <input type="number" id="annual-input" placeholder="例如：240000" min="1"/>
+        <span class="unit">元/年</span>
+      </div>
+      <p class="tip" id="annual-tip"></p>
+    </div>
+
+    <div class="tier-block">
+      <div class="section-title red">缴费档位选择</div>
+      <div class="tier-grid">
+        <div class="tier-col ss">
+          <div class="tier-col-title ss"><span class="tier-tag ss">五险</span>社保缴费基数</div>
+          <div class="tier-auto-badge" id="ss-badge-annual">✅ 默认最低档位</div>
+          <select class="tier-select ss" id="ss-select-annual" onchange="recalculate()"></select>
+          <div class="tier-custom-box" id="ss-custom-annual">
+            <div class="ci-row"><label>基数（元）</label><input type="number" id="ss-base-annual" placeholder="输入自定义基数" oninput="recalculate()"/></div>
+          </div>
+          <div class="tier-switch-hint">
+            默认最低档 → <button onclick="setSSMode('annual','select')">手动选档位</button> → <button onclick="setSSMode('annual','custom')">自定义基数</button>
+          </div>
+        </div>
+        <div class="tier-col hf">
+          <div class="tier-col-title hf"><span class="tier-tag hf">公积金</span>公积金缴费基数</div>
+          <div class="tier-auto-badge" id="hf-badge-annual">✅ 默认最低档位</div>
+          <select class="tier-select hf" id="hf-select-annual" onchange="recalculate()"></select>
+          <div class="tier-custom-box" id="hf-custom-annual">
+            <div class="ci-row"><label>基数（元）</label><input type="number" id="hf-base-annual" placeholder="输入自定义基数" oninput="recalculate()"/></div>
+          </div>
+          <div class="tier-switch-hint">
+            默认最低档 → <button onclick="setHFMode('annual','select')">手动选档位</button> → <button onclick="setHFMode('annual','custom')">自定义基数</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bonus-block">
+      <div class="section-title">奖金（可选）</div>
+      <div class="bonus-grid">
+        <div class="bonus-input-wrap"><label>年终奖（元/年）</label><input type="number" id="ab-annual" placeholder="例如：60000" min="0" oninput="updateBDPreview('annual')"/></div>
+        <div class="bonus-input-wrap"><label>季度奖（元/次）</label><input type="number" id="qb-annual" placeholder="例如：15000" min="0" oninput="updateBDPreview('annual')"/></div>
+      </div>
+    </div>
+
+    <div class="bd-preview" id="bd-annual"></div>
+  </div>
+
+  <!-- ==================== 月薪面板 ==================== -->
+  <div id="panel-monthly" class="panel">
+    <div class="salary-block">
+      <div class="section-title">薪酬信息</div>
+      <div class="input-row">
+        <label>税前月薪<small>（固定底薪）</small></label>
+        <input type="number" id="monthly-input" placeholder="例如：20000" min="1"/>
+        <span class="unit">元/月</span>
+      </div>
+      <p class="tip" id="monthly-tip"></p>
+    </div>
+    <div class="tier-block">
+      <div class="section-title red">缴费档位选择</div>
+      <div class="tier-grid">
+        <div class="tier-col ss">
+          <div class="tier-col-title ss"><span class="tier-tag ss">五险</span>社保缴费基数</div>
+          <div class="tier-auto-badge" id="ss-badge-monthly">✅ 默认最低档位</div>
+          <select class="tier-select ss" id="ss-select-monthly" onchange="recalculate()"></select>
+          <div class="tier-custom-box" id="ss-custom-monthly">
+            <div class="ci-row"><label>基数（元）</label><input type="number" id="ss-base-monthly" placeholder="输入自定义基数" oninput="recalculate()"/></div>
+          </div>
+          <div class="tier-switch-hint">
+            默认最低档 → <button onclick="setSSMode('monthly','select')">手动选档位</button> → <button onclick="setSSMode('monthly','custom')">自定义基数</button>
+          </div>
+        </div>
+        <div class="tier-col hf">
+          <div class="tier-col-title hf"><span class="tier-tag hf">公积金</span>公积金缴费基数</div>
+          <div class="tier-auto-badge" id="hf-badge-monthly">✅ 默认最低档位</div>
+          <select class="tier-select hf" id="hf-select-monthly" onchange="recalculate()"></select>
+          <div class="tier-custom-box" id="hf-custom-monthly">
+            <div class="ci-row"><label>基数（元）</label><input type="number" id="hf-base-monthly" placeholder="输入自定义基数" oninput="recalculate()"/></div>
+          </div>
+          <div class="tier-switch-hint">
+            默认最低档 → <button onclick="setHFMode('monthly','select')">手动选档位</button> → <button onclick="setHFMode('monthly','custom')">自定义基数</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bonus-block">
+      <div class="section-title">奖金（可选）</div>
+      <div class="bonus-grid">
+        <div class="bonus-input-wrap"><label>年终奖（元/年）</label><input type="number" id="ab-monthly" placeholder="例如：60000" min="0" oninput="updateBDPreview('monthly')"/></div>
+        <div class="bonus-input-wrap"><label>季度奖（元/次）</label><input type="number" id="qb-monthly" placeholder="例如：15000" min="0" oninput="updateBDPreview('monthly')"/></div>
+      </div>
+    </div>
+    <div class="bd-preview" id="bd-monthly"></div>
+  </div>
+
+  <!-- ==================== 分解输入面板 ==================== -->
+  <div id="panel-breakdown" class="panel">
+    <div class="salary-block">
+      <div class="section-title">薪酬信息</div>
+      <div class="input-row">
+        <label>月薪<small>（固定底薪）</small></label>
+        <input type="number" id="bd-monthly-input" placeholder="例如：20000" min="1"/>
+        <span class="unit">元/月</span>
+      </div>
+      <div class="bonus-block">
+        <div class="bonus-grid">
+          <div class="bonus-input-wrap"><label>年终奖（元/年）</label><input type="number" id="ab-breakdown" placeholder="例如：60000" min="0" oninput="updateBDPreview('breakdown')"/></div>
+          <div class="bonus-input-wrap"><label>季度奖（元/次）</label><input type="number" id="qb-breakdown" placeholder="例如：15000" min="0" oninput="updateBDPreview('breakdown')"/></div>
+        </div>
+      </div>
+      <div class="bd-preview" id="bd-breakdown"></div>
+    </div>
+    <div class="tier-block">
+      <div class="section-title red">缴费档位选择</div>
+      <div class="tier-grid">
+        <div class="tier-col ss">
+          <div class="tier-col-title ss"><span class="tier-tag ss">五险</span>社保缴费基数</div>
+          <div class="tier-auto-badge" id="ss-badge-breakdown">✅ 默认最低档位</div>
+          <select class="tier-select ss" id="ss-select-breakdown" onchange="recalculate()"></select>
+          <div class="tier-custom-box" id="ss-custom-breakdown">
+            <div class="ci-row"><label>基数（元）</label><input type="number" id="ss-base-breakdown" placeholder="输入自定义基数" oninput="recalculate()"/></div>
+          </div>
+          <div class="tier-switch-hint">
+            默认最低档 → <button onclick="setSSMode('breakdown','select')">手动选档位</button> → <button onclick="setSSMode('breakdown','custom')">自定义基数</button>
+          </div>
+        </div>
+        <div class="tier-col hf">
+          <div class="tier-col-title hf"><span class="tier-tag hf">公积金</span>公积金缴费基数</div>
+          <div class="tier-auto-badge" id="hf-badge-breakdown">✅ 默认最低档位</div>
+          <select class="tier-select hf" id="hf-select-breakdown" onchange="recalculate()"></select>
+          <div class="tier-custom-box" id="hf-custom-breakdown">
+            <div class="ci-row"><label>基数（元）</label><input type="number" id="hf-base-breakdown" placeholder="输入自定义基数" oninput="recalculate()"/></div>
+          </div>
+          <div class="tier-switch-hint">
+            默认最低档 → <button onclick="setHFMode('breakdown','select')">手动选档位</button> → <button onclick="setHFMode('breakdown','custom')">自定义基数</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /card -->
+
+<button class="calc-btn" onclick="calculate()">立即计算 →</button>
+
+<!-- ========== 结果卡片 ========== -->
+<div class="card result-card" id="result-card">
+  <h2>计算结果</h2>
+  <div class="badge-row">
+    <span class="badge badge-tier" id="res-tier-badge">—</span>
+    <span class="badge badge-mode" id="res-mode-badge">—</span>
+    <span class="badge badge-override" id="res-override-badge">含手动调整</span>
+  </div>
+
+  <div class="salary-breakdown" id="salary-breakdown-block" style="display:none;">
+    <div class="sb-title">📋 薪酬构成拆解</div>
+    <div class="sb-row"><span class="sb-label">月薪 × 12</span><span class="sb-val" id="sb-base">—</span></div>
+    <div class="sb-row"><span class="sb-label">年终奖</span><span class="sb-val" id="sb-ab">—</span></div>
+    <div class="sb-row"><span class="sb-label">季度奖 × 4</span><span class="sb-val" id="sb-qb">—</span></div>
+    <div class="sb-row sb-total"><span class="sb-label">年度总薪酬</span><span class="sb-val" id="sb-total">—</span></div>
+  </div>
+
+  <div class="result-grid">
+    <div class="result-item ri-comp">
+      <div class="item-label">🏢 公司五险一金/月</div>
+      <div class="item-value" id="res-company-monthly">—</div>
+    </div>
+    <div class="result-item ri-pers">
+      <div class="item-label">👤 个人五险一金/月</div>
+      <div class="item-value" id="res-personal-monthly">—</div>
+    </div>
+    <div class="result-item ri-total">
+      <div class="item-label">💰 公司招聘总成本/年</div>
+      <div class="item-value" id="res-company-annual">—</div>
+    </div>
+    <div class="result-item ri-home">
+      <div class="item-label">📊 员工到手月薪（税前）</div>
+      <div class="item-value" id="res-takehome">—</div>
+    </div>
+    <div class="result-item ri-bonus" id="res-bonus-item">
+      <div class="item-label">🎁 全年奖金总额（不含月薪）</div>
+      <div class="item-value" id="res-bonus-total">—</div>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <table class="detail-table">
+    <thead>
+      <tr>
+        <th>项目</th>
+        <th>缴费基数</th>
+        <th>公司（比例）</th>
+        <th>个人（比例）</th>
+        <th>公司金额/月</th>
+        <th>个人金额/月</th>
+      </tr>
+    </thead>
+    <tbody id="detail-tbody"></tbody>
+  </table>
+
+  <hr class="divider"/>
+
+  <div class="note">
+    💡 <b>说明：</b>五险（养老+医疗+工伤+失业+生育）公司 26.2%，个人 10.5%；公积金公司、个人各 12%。<br/>
+    公司年总成本 = 月薪×12 + 公司五险一金×12 + 年终奖 + 季度奖×4。奖金通常不计入社保缴费基数。
+  </div>
+</div>
+
+<!-- ========== 档位参照表 ========== -->
+<div class="ref-section">
+  <h3>档位参照表</h3>
+  <div class="ref-table-wrap">
+    <table class="ref-table">
+      <thead>
+        <tr>
+          <th>薪资档位</th>
+          <th>社保基数</th>
+          <th>公积金基数</th>
+          <th>公司社保<br>(26.2%)</th>
+          <th>公司公积金<br>(12%)</th>
+          <th class="red-text bold">公司合计/月</th>
+          <th>个人社保<br>(10.5%)</th>
+          <th>个人公积金<br>(12%)</th>
+          <th>个人合计/月</th>
+        </tr>
+      </thead>
+      <tbody id="ref-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ==================== 数据 ====================
+const TIERS = [
+  { label:"4-6K（含）",    min:4000,  max:6000,  ssBase:4986,  hfBase:3500,  compSS:1306.33,compHF:420,  compTotal:1726.33,persSS:523.53, persHF:420,  persTotal:943.53  },
+  { label:"6-8K（含）",    min:6001,  max:8000,  ssBase:4986,  hfBase:3500,  compSS:1306.33,compHF:420,  compTotal:1726.33,persSS:523.53, persHF:420,  persTotal:943.53  },
+  { label:"8-10K（含）",   min:8001,  max:10000, ssBase:4986,  hfBase:3500,  compSS:1306.33,compHF:420,  compTotal:1726.33,persSS:523.53, persHF:420,  persTotal:943.53  },
+  { label:"10-12K（含）",  min:10001, max:12000, ssBase:5000,  hfBase:5000,  compSS:1310.00,compHF:600,  compTotal:1910.00,persSS:525.00, persHF:600,  persTotal:1125.00 },
+  { label:"12-15K（含）",  min:12001, max:15000, ssBase:8000,  hfBase:8000,  compSS:2096.00,compHF:960,  compTotal:3056.00,persSS:840.00, persHF:960,  persTotal:1800.00 },
+  { label:"15-20K（含）",  min:15001, max:20000, ssBase:10000, hfBase:10000, compSS:2620.00,compHF:1200, compTotal:3820.00,persSS:1050.00,persHF:1200, persTotal:2250.00 },
+  { label:"20-25K（含）",  min:20001, max:25000, ssBase:12000, hfBase:12000, compSS:3144.00,compHF:1440, compTotal:4584.00,persSS:1260.00,persHF:1440, persTotal:2700.00 },
+  { label:"25-30K（含）",  min:25001, max:30000, ssBase:14000, hfBase:14000, compSS:3668.00,compHF:1680, compTotal:5348.00,persSS:1470.00,persHF:1680, persTotal:3150.00 },
+  { label:"30-35K（含）",  min:30001, max:35000, ssBase:16000, hfBase:16000, compSS:4192.00,compHF:1920, compTotal:6112.00,persSS:1680.00,persHF:1920, persTotal:3600.00 },
+  { label:"35-40K（含）",  min:35001, max:40000, ssBase:18000, hfBase:18000, compSS:4716.00,compHF:2160, compTotal:6876.00,persSS:1890.00,persHF:2160, persTotal:4050.00 },
+  { label:"40K以上",       min:40001, max:Infinity, ssBase:20000,hfBase:20000,compSS:5240.00,compHF:2400,compTotal:7640.00,persSS:2100.00,persHF:2400, persTotal:4500.00 },
+];
+
+// 每个 tab 的档位模式状态: { ss:'auto'|'select'|'custom', hf:'auto'|'select'|'custom' }
+const states = { annual:{ss:'auto',hf:'auto'}, monthly:{ss:'auto',hf:'auto'}, breakdown:{ss:'auto',hf:'auto'} };
+let currentTab = 'annual';
+
+// ==================== 初始化 ====================
+function init() {
+  ['annual','monthly','breakdown'].forEach(tab => {
+    const ssSel = document.getElementById(`ss-select-${tab}`);
+    const hfSel = document.getElementById(`hf-select-${tab}`);
+    ssSel.innerHTML = TIERS.map((t,i) => `<option value="${i}">${t.label}（基数 ${t.ssBase}）</option>`).join('');
+    hfSel.innerHTML = TIERS.map((t,i) => `<option value="${i}">${t.label}（基数 ${t.hfBase}）</option>`).join('');
+  });
+
+  // 实时提示 & 自动匹配
+  document.getElementById('annual-input').addEventListener('input', onAnnualInput);
+  document.getElementById('monthly-input').addEventListener('input', onMonthlyInput);
+  document.getElementById('bd-monthly-input').addEventListener('input', onBDMonthlyInput);
+
+  renderRefTable();
+}
+
+// ==================== 事件处理 ====================
+function onAnnualInput() {
+  const av = parseFloat(this.value);
+  const tip = document.getElementById('annual-tip');
+  if (!av || av <= 0) { tip.textContent = ''; return; }
+  const m = av / 12;
+  tip.textContent = `≈ 月薪 ${fmtInt(m)} 元`;
+  autoMatch(m, 'annual');
+  updateBDPreview('annual');
+}
+
+function onMonthlyInput() {
+  const mv = parseFloat(this.value);
+  const tip = document.getElementById('monthly-tip');
+  if (!mv || mv <= 0) { tip.textContent = ''; return; }
+  tip.textContent = `≈ 年薪 ${fmtInt(mv * 12)} 元`;
+  autoMatch(mv, 'monthly');
+  updateBDPreview('monthly');
+}
+
+function onBDMonthlyInput() {
+  const mv = parseFloat(this.value) || 0;
+  autoMatch(mv, 'breakdown');
+  updateBDPreview('breakdown');
+}
+
+function autoMatch(monthly, tab) {
+  const tier = getTier(monthly);
+  const idx = TIERS.indexOf(tier);
+  ['ss','hf'].forEach(type => {
+    const state = states[tab][type];
+    if (state === 'auto') {
+      document.getElementById(`${type}-select-${tab}`).selectedIndex = idx;
+    }
+  });
+}
+
+// ==================== 档位模式切换 ====================
+function setSSMode(tab, mode) {
+  states[tab].ss = mode;
+  const badge = document.getElementById(`ss-badge-${tab}`);
+  const sel   = document.getElementById(`ss-select-${tab}`);
+  const cust  = document.getElementById(`ss-custom-${tab}`);
+  badge.className = 'tier-auto-badge';
+  sel.style.display = 'none';
+  cust.classList.remove('show');
+
+  if (mode === 'auto') {
+    badge.textContent = '✅ 默认最低档位';
+    sel.style.display = '';
+  } else if (mode === 'select') {
+    badge.textContent = '⚠️ 手动选档位';
+    badge.classList.add('manual');
+    sel.style.display = '';
+  } else {
+    badge.textContent = '✏️ 自定义基数';
+    badge.classList.add('custom');
+    cust.classList.add('show');
+  }
+  recalculate();
+}
+
+function setHFMode(tab, mode) {
+  states[tab].hf = mode;
+  const badge = document.getElementById(`hf-badge-${tab}`);
+  const sel   = document.getElementById(`hf-select-${tab}`);
+  const cust  = document.getElementById(`hf-custom-${tab}`);
+  badge.className = 'tier-auto-badge';
+  sel.style.display = 'none';
+  cust.classList.remove('show');
+
+  if (mode === 'auto') {
+    badge.textContent = '✅ 默认最低档位';
+    sel.style.display = '';
+  } else if (mode === 'select') {
+    badge.textContent = '⚠️ 手动选档位';
+    badge.classList.add('manual');
+    sel.style.display = '';
+  } else {
+    badge.textContent = '✏️ 自定义基数';
+    badge.classList.add('custom');
+    cust.classList.add('show');
+  }
+  recalculate();
+}
+
+// ==================== 小计预览 ====================
+function updateBDPreview(tab) {
+  const el = document.getElementById(`bd-${tab}`);
+  let m, ab, qb;
+  if (tab === 'annual') {
+    m  = parseFloat(document.getElementById('annual-input').value) / 12 || 0;
+    ab = parseFloat(document.getElementById('ab-annual').value) || 0;
+    qb = parseFloat(document.getElementById('qb-annual').value) || 0;
+  } else if (tab === 'monthly') {
+    m  = parseFloat(document.getElementById('monthly-input').value) || 0;
+    ab = parseFloat(document.getElementById('ab-monthly').value) || 0;
+    qb = parseFloat(document.getElementById('qb-monthly').value) || 0;
+  } else {
+    m  = parseFloat(document.getElementById('bd-monthly-input').value) || 0;
+    ab = parseFloat(document.getElementById('ab-breakdown').value) || 0;
+    qb = parseFloat(document.getElementById('qb-breakdown').value) || 0;
+  }
+  if (m === 0 && ab === 0 && qb === 0) { el.classList.remove('show'); return; }
+  const total = m * 12 + ab + qb * 4;
+  el.innerHTML = `月薪×12 = <b>¥${fmt(m*12)}</b> &nbsp;|&nbsp;年终奖 = <b>¥${fmt(ab)}</b> &nbsp;|&nbsp;季度奖×4 = <b>¥${fmt(qb*4)}</b><br/><span class="bd-total">年度总薪酬预估：¥${fmt(total)}</span>`;
+  el.classList.add('show');
+}
+
+// ==================== Tab 切换 ====================
+function switchTab(tab) {
+  currentTab = tab;
+  ['annual','monthly','breakdown'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+    document.getElementById(`panel-${t}`).classList.toggle('show', t === tab);
+  });
+  document.getElementById('result-card').classList.remove('show');
+}
+
+// ==================== 工具函数 ====================
+function fmt(num)   { return Number(num).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtInt(num){ return Number(num).toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+function getTier(monthly) {
+  if (monthly <= 0) return TIERS[0];
+  if (monthly < 4000) return TIERS[0];
+  for (let t of TIERS) { if (monthly > t.min - 1000 && monthly <= t.max) return t; }
+  return TIERS[TIERS.length - 1];
+}
+function getTierBySS(base) {
+  for (let i = 0; i < TIERS.length; i++) { if (TIERS[i].ssBase >= base) return TIERS[i]; }
+  return TIERS[TIERS.length - 1];
+}
+function getTierByHF(base) {
+  for (let i = 0; i < TIERS.length; i++) { if (TIERS[i].hfBase >= base) return TIERS[i]; }
+  return TIERS[TIERS.length - 1];
+}
+
+// ==================== 核心计算 ====================
+function calculate() {
+  const tab = currentTab;
+  const state = states[tab];
+
+  // 获取月薪和奖金
+  let monthly = 0, ab = 0, qb = 0, modeLabel = '';
+  if (tab === 'annual') {
+    const av = parseFloat(document.getElementById('annual-input').value);
+    if (!av || av <= 0) { alert('请输入有效的年薪金额！'); return; }
+    monthly = av / 12;
+    ab = parseFloat(document.getElementById('ab-annual').value) || 0;
+    qb = parseFloat(document.getElementById('qb-annual').value) || 0;
+    modeLabel = `年薪 ¥${fmtInt(av)}`;
+  } else if (tab === 'monthly') {
+    const mv = parseFloat(document.getElementById('monthly-input').value);
+    if (!mv || mv <= 0) { alert('请输入有效的月薪金额！'); return; }
+    monthly = mv;
+    ab = parseFloat(document.getElementById('ab-monthly').value) || 0;
+    qb = parseFloat(document.getElementById('qb-monthly').value) || 0;
+    modeLabel = `月薪 ¥${fmtInt(mv)}`;
+  } else {
+    const mv = parseFloat(document.getElementById('bd-monthly-input').value);
+    if (!mv || mv <= 0) { alert('分解输入模式需至少填写月薪！'); return; }
+    monthly = mv;
+    ab = parseFloat(document.getElementById('ab-breakdown').value) || 0;
+    qb = parseFloat(document.getElementById('qb-breakdown').value) || 0;
+    modeLabel = `分解模式 · 月薪 ¥${fmtInt(mv)}`;
+  }
+
+  // 五险档位（与薪资输入完全解耦）
+  // auto = 默认第一个档位最低基数，手动选档位 / 自定义基数 由用户独立控制
+  let tierSS;
+  if (state.ss === 'auto') {
+    tierSS = TIERS[0]; // 固定默认：最低档位
+  } else if (state.ss === 'select') {
+    const idx = parseInt(document.getElementById(`ss-select-${tab}`).value);
+    tierSS = TIERS[idx];
+  } else {
+    const base = parseFloat(document.getElementById(`ss-base-${tab}`).value);
+    if (!base || base <= 0) { alert('请输入有效的五险缴费基数！'); return; }
+    tierSS = { ...TIERS[0], ssBase: base, compSS: base * 0.262, persSS: base * 0.105 };
+  }
+
+  // 公积金档位（与薪资输入完全解耦）
+  let tierHF;
+  if (state.hf === 'auto') {
+    tierHF = TIERS[0]; // 固定默认：最低档位
+  } else if (state.hf === 'select') {
+    const idx = parseInt(document.getElementById(`hf-select-${tab}`).value);
+    tierHF = TIERS[idx];
+  } else {
+    const base = parseFloat(document.getElementById(`hf-base-${tab}`).value);
+    if (!base || base <= 0) { alert('请输入有效的公积金缴费基数！'); return; }
+    tierHF = { ...TIERS[0], hfBase: base, compHF: base * 0.12, persHF: base * 0.12 };
+  }
+
+  const compPerMonth = tierSS.compSS + tierHF.compHF;
+  const persPerMonth = tierSS.persSS + tierHF.persHF;
+  const bonusYear = ab + qb * 4;
+  const annualCost = monthly * 12 + compPerMonth * 12 + bonusYear;
+  const takeHome = monthly - persPerMonth;
+
+  // 档位标签
+  const ssLabel = state.ss === 'auto'   ? '（默认最低档位）' :
+                  state.ss === 'select' ? TIERS[parseInt(document.getElementById(`ss-select-${tab}`).value)].label :
+                  `${tierSS.ssBase}（自定义）`;
+  const hfLabel = state.hf === 'auto'   ? '（默认最低档位）' :
+                  state.hf === 'select' ? TIERS[parseInt(document.getElementById(`hf-select-${tab}`).value)].label :
+                  `${tierHF.hfBase}（自定义）`;
+
+  const isOverride = state.ss !== 'auto' || state.hf !== 'auto';
+
+  // 渲染结果
+  document.getElementById('res-tier-badge').textContent = `五险: ${ssLabel} | 公积金: ${hfLabel}`;
+  document.getElementById('res-mode-badge').textContent = modeLabel;
+  document.getElementById('res-override-badge').style.display = isOverride ? 'inline-block' : 'none';
+
+  // 薪酬拆解
+  const sbBlock = document.getElementById('salary-breakdown-block');
+  const bonusEl = document.getElementById('res-bonus-item');
+  if (ab > 0 || qb > 0) {
+    sbBlock.style.display = 'block';
+    document.getElementById('sb-base').textContent = `¥${fmt(monthly*12)}`;
+    document.getElementById('sb-ab').textContent = `¥${fmt(ab)}`;
+    document.getElementById('sb-qb').textContent = `¥${fmt(qb*4)}`;
+    document.getElementById('sb-total').textContent = `¥${fmt(monthly*12+ab+qb*4)}`;
+    bonusEl.style.display = 'block';
+    document.getElementById('res-bonus-total').innerHTML = `¥${fmt(bonusYear)} <span>元/年</span>`;
+  } else {
+    sbBlock.style.display = 'none';
+    bonusEl.style.display = 'none';
+  }
+
+  document.getElementById('res-company-monthly').innerHTML = `¥${fmt(compPerMonth)} <span>元/月</span>`;
+  document.getElementById('res-personal-monthly').innerHTML = `¥${fmt(persPerMonth)} <span>元/月</span>`;
+
+  // 公司招聘年度总成本 = 月薪×12 + 年终奖 + 季度奖×4 + 公司五险一金×12
+  document.getElementById('res-company-annual').innerHTML   =
+    `<div class="annual-total-num">¥${fmt(annualCost)} <span>元/年</span></div>
+     <div class="annual-formula">= 月薪×12 ${ab||qb?'+ 奖金':''} + 公司五险一金×12</div>`;
+  document.getElementById('res-takehome').innerHTML         = `¥${fmt(takeHome)} <span>元/月</span>`;
+
+  // 明细表
+  document.getElementById('detail-tbody').innerHTML = `
+    <tr>
+      <td>五险（养老+医疗+工伤+失业+生育）</td>
+      <td>${fmt(tierSS.ssBase)}</td>
+      <td class="td-red">26.2%</td>
+      <td class="td-blue">10.5%</td>
+      <td class="td-red">${fmt(tierSS.compSS)}</td>
+      <td class="td-blue">${fmt(tierSS.persSS)}</td>
+    </tr>
+    <tr>
+      <td>住房公积金</td>
+      <td>${fmt(tierHF.hfBase)}</td>
+      <td class="td-red">12%</td>
+      <td class="td-blue">12%</td>
+      <td class="td-red">${fmt(tierHF.compHF)}</td>
+      <td class="td-blue">${fmt(tierHF.persHF)}</td>
+    </tr>
+    <tr class="highlight-row">
+      <td class="td-sum">合计</td>
+      <td>—</td>
+      <td class="td-red td-sum">—</td>
+      <td class="td-blue td-sum">—</td>
+      <td class="td-red td-sum">${fmt(compPerMonth)}</td>
+      <td class="td-blue td-sum">${fmt(persPerMonth)}</td>
+    </tr>
+  `;
+
+  document.getElementById('result-card').classList.add('show');
+  document.getElementById('result-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ==================== 档位参照表 ====================
+function renderRefTable() {
+  document.getElementById('ref-tbody').innerHTML = TIERS.map(t => `
+    <tr data-label="${t.label}">
+      <td>${t.label}</td>
+      <td class="red-text">${t.ssBase.toLocaleString()}</td>
+      <td class="red-text">${t.hfBase.toLocaleString()}</td>
+      <td>${fmt(t.compSS)}</td>
+      <td>${fmt(t.compHF)}</td>
+      <td class="red-text bold">${fmt(t.compTotal)}</td>
+      <td>${fmt(t.persSS)}</td>
+      <td>${fmt(t.persHF)}</td>
+      <td>${fmt(t.persTotal)}</td>
+    </tr>
+  `).join('');
+}
+
+init();
+
+// ─── PWA / Service Worker ───────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      console.log('SW registered:', reg.scope);
+    }).catch((err) => {
+      console.log('SW registration failed:', err);
+    });
+  });
+}
+
+// PWA 安装提示横幅
+let deferredPrompt;
+const installBanner = document.createElement('div');
+installBanner.id = 'pwa-install-banner';
+installBanner.innerHTML = '📱 戳此安装 App，随时随地使用社保计算器';
+installBanner.style.cssText = `
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: #0f2347; color: white;
+  text-align: center; padding: 14px 20px;
+  font-size: 15px; cursor: pointer; z-index: 99999;
+  box-shadow: 0 -2px 12px rgba(0,0,0,.3);
+  display: none; border-radius: 12px 12px 0 0;
+  letter-spacing: .5px;
+`;
+document.body.appendChild(installBanner);
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBanner.style.display = 'block';
+  installBanner.onclick = async () => {
+    installBanner.style.display = 'none';
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+  };
+});
+</script>
+</body>
+</html>
