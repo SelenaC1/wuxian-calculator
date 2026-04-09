@@ -11,13 +11,13 @@
   "scope": "/",
   "icons": [
     {
-      "src": "/五险一金计算器-icon.png",
+      "src": "/icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/五险一金计算器-icon.png",
+      "src": "/icon.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
